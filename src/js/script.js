@@ -55,8 +55,8 @@
   class Product {
     constructor(id, data){
       const thisProduct = this;
-      thisProduct.id = id; // stringi produktów np. cake ,breakfast, pizza, salad
-      thisProduct.data = data; // obiekt zaiwerajacy w sobie dane w/w produktów
+      thisProduct.id = id;
+      thisProduct.data = data;
       thisProduct.renderInMenu();
       thisProduct.getElements();
       thisProduct.initOrderForm();
@@ -71,6 +71,7 @@
       menuContainer.appendChild(thisProduct.element); /* add element to menu */
     }
 
+
     getElements(){
       const thisProduct = this;
       thisProduct.accordionTrigger = thisProduct.element.querySelector(select.menuProduct.clickable);
@@ -78,6 +79,7 @@
       thisProduct.formInputs = thisProduct.form.querySelectorAll(select.all.formInputs);
       thisProduct.cartButton = thisProduct.element.querySelector(select.menuProduct.cartButton);
       thisProduct.priceElem = thisProduct.element.querySelector(select.menuProduct.priceElem);
+      thisProduct.imageWrapper = thisProduct.element.querySelector(select.menuProduct.imageWrapper);
     }
 
     initAccordion(){
@@ -87,10 +89,10 @@
         const activeArticles = document.querySelectorAll('article.active'); /* find active product (product that has active class) */
         for (let activeArticle of activeArticles) {   /* if there is active product and it's not thisProduct.element, remove class active from it */
           if (activeArticle !== thisProduct.element) {
-            activeArticle.classList.remove('active');
+            activeArticle.classList.remove(classNames.menuProduct.imageVisible);
           }
         }
-        thisProduct.element.classList.toggle('active'); /* toggle active class on thisProduct.element */
+        thisProduct.element.classList.toggle(classNames.menuProduct.imageVisible); /* toggle active class on thisProduct.element */
       });
     }
 
@@ -119,13 +121,21 @@
         const param = thisProduct.data.params[paramId]; // determine param value, e.g. paramId = 'toppings', param = { label: 'Toppings', type: 'checkboxes'... }
         for(let optionId in param.options) { // for every option in this category
           const option = param.options[optionId]; // determine option value, e.g. optionId = 'olives', option = { label: 'Olives', price: 2, default: true }
+          const imgClass = '.' + paramId + '-' + optionId;
+          const optionImage = thisProduct.imageWrapper.querySelector(imgClass);
           if(formData[paramId].includes(optionId)){
             if(!option.default){
               price += option.price;
             }
+            if(optionImage){
+              optionImage.classList.add(classNames.menuProduct.imageVisible);
+            }
           }else{
             if(option.default){
               price -= option.price;
+            }
+            if(optionImage){
+              optionImage.classList.remove(classNames.menuProduct.imageVisible);
             }
           }
         }
