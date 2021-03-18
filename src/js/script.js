@@ -86,18 +86,18 @@
     cartProduct: Handlebars.compile(document.querySelector(select.templateOf.cartProduct).innerHTML),
   };
 
-
   class Product { // utw. instancji "Product" (każdy product osobno) - przekazanie nazwy produktu (cake, breakfast, pizza, salad) i obiektu z informacjami takiego produktu
+
     constructor(id, data){
       const thisProduct = this;
       thisProduct.id = id; // przypisanie nazwy jako id produktu (cake, breakfast, pizza, salad)
       thisProduct.data = data; // utworzenie obiektu z informacjami takiego produktu (cake, breakfast, pizza, salad)
       thisProduct.renderInMenu(); // wygenerowanie boxów z Produktami w index.html
       thisProduct.getElements(); // pobieranie określonych miejsc z HTML
+      thisProduct.initAccordion();
       thisProduct.initOrderForm(); // aktywacja listnerów do określenia zamówienia na podstawie wyborów użytkownika
       thisProduct.initAmountWidget();
       thisProduct.processOrder();
-      thisProduct.initAccordion();
     }
 
     renderInMenu(){  // wygenerowanie boxów z Produktami w index.html
@@ -123,13 +123,13 @@
       const thisProduct = this;
       thisProduct.accordionTrigger.addEventListener('click', function(event) { // listener na nagłówki produktu
         event.preventDefault();
-        const activeArticles = document.querySelectorAll('article.active'); // znalezienie wszystkich produktów z klasą aktywną
-        for (let activeArticle of activeArticles) {   // pętla po aktywnych produktach
-          if (activeArticle !== thisProduct.element) { // gdy istnieją aktywne produkty który nie jest klikniętym produktem
-            activeArticle.classList.remove(classNames.menuProduct.imageVisible); // schowaj je poprzez usuniecie klasy active
+        const activeProduct = document.querySelectorAll(select.all.menuProductsActive); // znalezienie wszystkich produktów z klasą aktywną
+        for (let product  of activeProduct) {   // pętla po aktywnych produktach
+          if (activeProduct !== thisProduct.element) { // gdy istnieją aktywne produkty który nie jest klikniętym produktem
+            product.classList.remove(classNames.menuProduct.wrapperActive); // schowaj je poprzez usuniecie klasy active
           }
         }
-        thisProduct.element.classList.toggle(classNames.menuProduct.imageVisible); // przełączaj klasę active klikniętego produktu
+        thisProduct.element.classList.toggle(classNames.menuProduct.wrapperActive); // przełączaj klasę active klikniętego produktu
       });
     }
 
@@ -151,6 +151,15 @@
       });
     }
 
+    initAmountWidget(){
+      const thisProduct = this;
+      thisProduct.amountWidget = new AmountWidget(thisProduct.amountWidgetElem); // utw. instancji "AmountWidget" (i przekazanie jej do podobiektu Product'u) - przekazanie elementu html - obszaru widżeta podawania ilosci produktu
+      thisProduct.amountWidgetElem.addEventListener('updated', function(event){ // ustawienie customowego listnera na widżet podawania ilosci produktu
+        event.preventDefault();
+        thisProduct.processOrder();
+      });
+    }
+
     processOrder(){
       const thisProduct = this;
       const formData = utils.serializeFormToObject(thisProduct.form); // tworzy obiekt (zawierający tablice z opcjami ZAZNACZONYCH opcji produktu) na podstawie (dzięki specjalnej funkcji utils.serializeFormToObject z function.js)
@@ -159,8 +168,7 @@
         const param = thisProduct.data.params[paramId]; // utworzenie obiektu z danych wewnątrz danego nagłówka
         for (let optionId in param.options) { // nazwa opcji produktu - pętla po OPCJACH znajdujacych się pod danym nagłówkiem opcji
           const option = param.options[optionId]; // utworzenie obiektu z danymi wewnątrz danej opcji
-          const imgClass = '.' + paramId + '-' + optionId; // utworzenie stałej z nagłówka opcji i opcji (jest nazwą klasy stosowaną w klasach obrazków)
-          const optionImage = thisProduct.imageWrapper.querySelector(imgClass); // obrazek danej opcji wyboru (o klasie img)
+          const optionImage = thisProduct.imageWrapper.querySelector('.' + paramId + '-' + optionId); // obrazek danej opcji wyboru (o klasie img)
           if (formData[paramId].includes(optionId)){ //sprawdza (w pętli) czy dana opcja produktu jest zaznaczona (czy nazwę opcji zawiera się w tablicy z opcjami danego nagłówka)
             if (!option.default){ // czy dana opcja nie jest domyślna
               price += option.price; //zwiększam wyjściową cenę o cenę tej opcji
@@ -184,15 +192,6 @@
       thisProduct.priceElem.innerHTML = price; // wstawienie ceny w pole TOTAL (uwzgledniajacej wybrane opcje produktu i ilość produktu)
     }
 
-    initAmountWidget(){
-      const thisProduct = this;
-      thisProduct.amountWidget = new AmountWidget(thisProduct.amountWidgetElem); // utw. instancji "AmountWidget" (i przekazanie jej do podobiektu Product'u) - przekazanie elementu html - obszaru widżeta podawania ilosci produktu
-      thisProduct.amountWidgetElem.addEventListener('updated', function(event){ // ustawienie customowego listnera na widżet podawania ilosci produktu
-        event.preventDefault();
-        thisProduct.processOrder();
-      });
-    }
-
     addToCart(){
       const thisProduct = this;
       app.cart.add(thisProduct.prepareCartProduct()); //   wywołanie metody z przekazaniem obiektu produkt
@@ -200,13 +199,14 @@
 
     prepareCartProduct() { // utworzenie obiektu zawierajacego dane potrzebne w koszyku
       const thisProduct = this;
-      const productSummary = {};
-      productSummary.id = thisProduct.id;
-      productSummary.name = thisProduct.data.name;
-      productSummary.amount = thisProduct.amountWidget.value;
-      productSummary.priceSingle = thisProduct.priceSingle;
-      productSummary.price = thisProduct.price;
-      productSummary.params = thisProduct.prepareCartProductParams();
+      const productSummary = {
+        id: thisProduct.id,
+        name: thisProduct.data.name,
+        amount: thisProduct.amountWidget.value,
+        priceSingle: thisProduct.priceSingle,
+        price: thisProduct.price,
+        params: thisProduct.prepareCartProductParams(),
+      };
       return productSummary;
     }
 
@@ -232,11 +232,12 @@
   }
 
   class AmountWidget{ // utw. instancji "AmountWidget" - przekazanie elementu html - obszaru widżeta podawania ilosci produktu
+
     constructor(element){
       const thisWidget = this;
       thisWidget.element = element; // przekazanie obszaru widżeta podawania ilosci produktu
       thisWidget.getElements(); // wyodrębnienie przecisków +/- i inputu
-      thisWidget.setValue(settings.amountWidget.defaultValue); // obsługa pola na ilość produktu - przekazanie domyślnej ilosci produktu w polu input
+      thisWidget.setValue(thisWidget.input.value || settings.amountWidget.defaultValue); //
       thisWidget.initActions(); // ustawienie listenerów na input do il. prod. i przyciski +/-
     }
 
@@ -277,12 +278,15 @@
 
     announce(){ // tworzenie customowego eventu na widżecie zmiany il. produktu
       const thisWidget = this;
-      const event = new Event('updated'); // klasa Event jest wbudowana w przegladarkę (nazwa eventu dowolna np. update)
+      const event = new CustomEvent('updated', {
+        bubbles: true
+      });
       thisWidget.element.dispatchEvent(event); // nakładanie eventu o nazwie updated na element widżeta zmiany il produktu
     }
   }
 
   class Cart{
+
     constructor(element){ // z przekazaniem całego obszaru (diva) koszyka
       const thisCart = this;
       thisCart.products = []; // pusta tablica Cart.products
@@ -296,6 +300,10 @@
       thisCart.dom.wrapper = element; // przekazanie całego obszaru (diva) koszyka do podobiektu
       thisCart.dom.toggleTrigger = thisCart.dom.wrapper.querySelector(select.cart.toggleTrigger);  // wyodrębnienie elementu html do rozwijania koszyka przez klikniecie (nagłówek)
       thisCart.dom.productList = thisCart.dom.wrapper.querySelector(select.cart.productList);
+      thisCart.dom.deliveryFee = thisCart.dom.wrapper.querySelector(select.cart.deliveryFee);
+      thisCart.dom.subTotalPrice = thisCart.dom.wrapper.querySelector(select.cart.subtotalPrice);
+      thisCart.dom.totalPrice = thisCart.dom.wrapper.querySelectorAll(select.cart.totalPrice);
+      thisCart.dom.totalNumber = thisCart.dom.wrapper.querySelector(select.cart.totalNumber);
     }
 
     initActions(){
@@ -304,6 +312,14 @@
         event.preventDefault();
         thisCart.dom.wrapper.classList.toggle(classNames.cart.wrapperActive); // włącznie klasy active rozwijącej koszyk
       });
+      thisCart.dom.productList.addEventListener('updated', function(){
+        thisCart.update();
+      });
+      thisCart.dom.productList.addEventListener('remove', function(){
+        console.log('wlazłem');
+        thisCart.remove(event.detail.cartProduct);
+
+      });
     }
 
     add(menuProduct){
@@ -311,6 +327,96 @@
       const generatedHTML = templates.cartProduct(menuProduct); // generowanie Handlebars kodu HTML (ale jako string) na podstawie za pomocą szablonu zawartego w index.html
       const generatedDOM = utils.createDOMFromHTML(generatedHTML); // utworzenie elementu DOM (boxy produktów) na podstawie stringu kodu HTML (robi to funkcja utils.createDOMFromHTM przywołana z function.js)
       thisCart.dom.productList.appendChild(generatedDOM); // wstawienie kodu w ustalone miejsce kodu HTML
+      thisCart.products.push(new CartProduct(menuProduct, generatedDOM));
+      thisCart.update();
+    }
+
+    update(){
+      const thisCart = this;
+      let deliveryFee = settings.cart.defaultDeliveryFee;
+      let totalNumber = 0;
+      let subtotalPrice = 0;
+      thisCart.totalPrice = 0;
+      for (let cartProduct of thisCart.products){
+        totalNumber += cartProduct.amount;
+        subtotalPrice += cartProduct.price;
+      }
+      if (totalNumber == 0){deliveryFee = 0;}
+      thisCart.totalPrice = subtotalPrice + deliveryFee;
+      thisCart.dom.deliveryFee.innerHTML = deliveryFee;
+      thisCart.dom.subTotalPrice.innerHTML = subtotalPrice;
+      thisCart.dom.totalNumber.innerHTML = totalNumber;
+      for (let totalPricePlace of thisCart.dom.totalPrice) {
+        totalPricePlace.innerHTML = thisCart.totalPrice;
+      }
+    }
+
+    remove(cartProductToRemove){
+      const thisCart = this;
+      cartProductToRemove.dom.wrapper.remove();
+      const indexOfRemove = thisCart.products.indexOf(cartProductToRemove);
+      thisCart.products.splice(indexOfRemove, 1);
+      thisCart.update();
+    }
+  }
+
+  class CartProduct{
+
+    constructor(menuProduct, element){
+      const thisCartProduct = this;
+      thisCartProduct.id = menuProduct.id;
+      thisCartProduct.name = menuProduct.name;
+      thisCartProduct.amount = menuProduct.amount;
+      thisCartProduct.params = menuProduct.params;
+      thisCartProduct.price = menuProduct.price;
+      thisCartProduct.priceSingle = menuProduct.priceSingle;
+      thisCartProduct.getElements(element);
+      thisCartProduct.initAmountWidget();
+      thisCartProduct.initActions();
+    }
+
+    getElements(element){
+      const thisCartProduct = this;
+      thisCartProduct.dom = {};
+      thisCartProduct.dom.wrapper = element;
+      thisCartProduct.dom.amountWidget = thisCartProduct.dom.wrapper.querySelector(select.cartProduct.amountWidget);
+      thisCartProduct.dom.price = thisCartProduct.dom.wrapper.querySelector(select.cartProduct.price);
+      thisCartProduct.dom.edit = thisCartProduct.dom.wrapper.querySelector(select.cartProduct.edit);
+      thisCartProduct.dom.remove = thisCartProduct.dom.wrapper.querySelector(select.cartProduct.remove);
+    }
+
+    initAmountWidget(){
+      const thisCartProduct = this;
+      thisCartProduct.amountWidget = new AmountWidget(thisCartProduct.dom.amountWidget); // utw. instancji "AmountWidget" (i przekazanie jej do podobiektu Product'u) - przekazanie elementu html - obszaru widżeta podawania ilosci produktu
+      thisCartProduct.dom.amountWidget.addEventListener('updated', function(event){ // ustawienie customowego listnera na widżet podawania ilosci produktu
+        event.preventDefault();
+        thisCartProduct.amount = thisCartProduct.amountWidget.value;
+        thisCartProduct.price = thisCartProduct.priceSingle * thisCartProduct.amount;
+        thisCartProduct.dom.price.innerHTML = thisCartProduct.price;
+      });
+    }
+
+    remove(){
+      const thisCartProduct = this;
+      const event = new CustomEvent('remove', {
+        bubbles: true,
+        detail: {
+          cartProduct: thisCartProduct,
+        },
+      });
+      thisCartProduct.dom.wrapper.dispatchEvent(event);
+      console.log(thisCartProduct);
+    }
+
+    initActions(){
+      const thisCartProduct = this;
+      thisCartProduct.dom.edit.addEventListener('click', function(event){
+        event.preventDefault();
+      });
+      thisCartProduct.dom.remove.addEventListener('click', function(event){
+        event.preventDefault();
+        thisCartProduct.remove();
+      });
     }
   }
 
