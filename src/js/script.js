@@ -79,6 +79,12 @@
     cart: {
       defaultDeliveryFee: 20,
     },
+
+    db: {
+      url: '//localhost:3131',
+      product: 'product',
+      order: 'order',
+    },
   };
 
   const templates = {
@@ -304,6 +310,9 @@
       thisCart.dom.subTotalPrice = thisCart.dom.wrapper.querySelector(select.cart.subtotalPrice);
       thisCart.dom.totalPrice = thisCart.dom.wrapper.querySelectorAll(select.cart.totalPrice);
       thisCart.dom.totalNumber = thisCart.dom.wrapper.querySelector(select.cart.totalNumber);
+      thisCart.dom.form = thisCart.dom.wrapper.querySelector(select.cart.form);
+      thisCart.dom.address = thisCart.dom.form.querySelector(select.cart.address);
+      thisCart.dom.phone = thisCart.dom.form.querySelector(select.cart.phone);
     }
 
     initActions(){
@@ -316,9 +325,11 @@
         thisCart.update();
       });
       thisCart.dom.productList.addEventListener('remove', function(){
-        console.log('wlazłem');
         thisCart.remove(event.detail.cartProduct);
-
+      });
+      thisCart.dom.form.addEventListener('submit', function(){
+        event.preventDefault();
+        thisCart.sendOrder();
       });
     }
 
@@ -333,19 +344,19 @@
 
     update(){
       const thisCart = this;
-      let deliveryFee = settings.cart.defaultDeliveryFee;
-      let totalNumber = 0;
-      let subtotalPrice = 0;
+      thisCart.deliveryFee = settings.cart.defaultDeliveryFee;
+      thisCart.totalNumber = 0;
+      thisCart.subtotalPrice = 0;
       thisCart.totalPrice = 0;
       for (let cartProduct of thisCart.products){
-        totalNumber += cartProduct.amount;
-        subtotalPrice += cartProduct.price;
+        thisCart.totalNumber += cartProduct.amount;
+        thisCart.subtotalPrice += cartProduct.price;
       }
-      if (totalNumber == 0){deliveryFee = 0;}
-      thisCart.totalPrice = subtotalPrice + deliveryFee;
-      thisCart.dom.deliveryFee.innerHTML = deliveryFee;
-      thisCart.dom.subTotalPrice.innerHTML = subtotalPrice;
-      thisCart.dom.totalNumber.innerHTML = totalNumber;
+      if (thisCart.totalNumber == 0){thisCart.deliveryFee = 0;}
+      thisCart.totalPrice = thisCart.subtotalPrice + thisCart.deliveryFee;
+      thisCart.dom.deliveryFee.innerHTML = thisCart.deliveryFee;
+      thisCart.dom.subTotalPrice.innerHTML = thisCart.subtotalPrice;
+      thisCart.dom.totalNumber.innerHTML = thisCart.totalNumber;
       for (let totalPricePlace of thisCart.dom.totalPrice) {
         totalPricePlace.innerHTML = thisCart.totalPrice;
       }
@@ -357,6 +368,41 @@
       const indexOfRemove = thisCart.products.indexOf(cartProductToRemove);
       thisCart.products.splice(indexOfRemove, 1);
       thisCart.update();
+    }
+
+    sendOrder(){
+      const thisCart = this;
+      const url = settings.db.url + '/' + settings.db.order;
+      const payload = {};
+      payload.address = thisCart.dom.address.value;
+      payload.phone = thisCart.dom.phone.value;
+      payload.totalPrice = thisCart.totalPrice;
+      payload.subTotalPrice = thisCart.subtotalPrice;
+      payload.totalNumber = thisCart.totalNumber;
+      payload.deliveryFee = thisCart.deliveryFee;
+      payload.products = [];
+      for(let prod of thisCart.products) {
+        payload.products.push(prod.getData());
+      }
+
+      console.log(payload);
+
+      const options = {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload),
+      };
+
+      fetch(url, options)
+        .then(function(response){
+          return response.json();
+        })
+        .then(function(parsedResponse){
+          console.log('parsedResponse', parsedResponse);
+        });
+
     }
   }
 
@@ -405,7 +451,6 @@
         },
       });
       thisCartProduct.dom.wrapper.dispatchEvent(event);
-      console.log(thisCartProduct);
     }
 
     initActions(){
@@ -418,30 +463,55 @@
         thisCartProduct.remove();
       });
     }
+
+    getData(){
+      const thisCartProduct = this;
+      const prod = {};
+      prod.id = thisCartProduct.id;
+      prod.name = thisCartProduct.name;
+      prod.amount = thisCartProduct.amount;
+      prod.price = thisCartProduct.price;
+      prod.priceSingle = thisCartProduct.priceSingle;
+      prod.params = thisCartProduct.params;
+      return prod;
+    }
   }
 
   const app = {
+
     initCart: function(){
       const thisApp = this;
       const cartElem = document.querySelector(select.containerOf.cart); // pobranie do stałej całego obszaru (diva) koszyka
       thisApp.cart = new Cart(cartElem); // nowy obiekt Cart (ale zapisany też jako podobiekt app) z przekazaniem całego obszaru (diva) koszyka
     },
+
     initMenu: function() { // tworzenie instancji dla każdego produktu
       const thisApp = this;
       for(let productData in thisApp.data.products){ // nazwa produktu-  przejście pętlą po wszystkich obiektach produktów (cake, breakfast, pizza, salad).
-        new Product(productData, thisApp.data.products[productData]); // utw. instancji "Product" (każdy product osobno) - przekazanie nazwy produktu (cake, breakfast, pizza, salad) i obiektu z informacjami takiego produktu
+        new Product(thisApp.data.products[productData].id, thisApp.data.products[productData]); // utw. instancji "Product" (każdy product osobno) - przekazanie nazwy produktu (cake, breakfast, pizza, salad) i obiektu z informacjami takiego produktu
       }
     },
+
     initData: function(){ // pobranie obiektu z danymi wszystkich produktów (z ob. dataSource z plk. data.js)
       const thisApp = this;
-      thisApp.data = dataSource; // pobranie obiektu z danymi wszystkich produktów (z ob. dataSource z plk. data.js)
+      thisApp.data = {}; // pobranie obiektu z danymi wszystkich produktów (z ob. dataSource z plk. data.js)
+      const url = settings.db.url + '/' + settings.db.product;
+      fetch(url)
+        .then(function(rawResponse){
+          return rawResponse.json();
+        })
+        .then(function(parsedResponse){
+          thisApp.data.products = parsedResponse;
+          thisApp.initMenu();
+        });
     },
+
     init: function(){
       const thisApp = this;
       thisApp.initData(); // wywołanie initData (pobranie obiektu z danymi wszystkich produktów (z ob. dataSource z plk. data.js))
-      thisApp.initMenu(); // wywołanie initMenu (tworzenie instancji dla każdego odrębnego produktu (cake, breakfast, pizza, salad))
       thisApp.initCart();
     },
+
   };
 
   app.init();  // wywołanie całej aplikacji (obiekt app)
