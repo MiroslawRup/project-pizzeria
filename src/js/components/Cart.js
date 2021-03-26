@@ -1,5 +1,5 @@
 import {select, classNames, templates, settings} from '../settings.js';
-import utils from '../utils.js';
+import {utils} from '../utils.js';
 import CartProduct from './CartProduct.js';
 
 class Cart{
@@ -45,6 +45,7 @@ class Cart{
   }
 
   add(menuProduct){
+    console.log(menuProduct);
     const thisCart = this;
     const generatedHTML = templates.cartProduct(menuProduct); // generowanie Handlebars kodu HTML (ale jako string) na podstawie za pomocą szablonu zawartego w index.html
     const generatedDOM = utils.createDOMFromHTML(generatedHTML); // utworzenie elementu DOM (boxy produktów) na podstawie stringu kodu HTML (robi to funkcja utils.createDOMFromHTM przywołana z function.js)

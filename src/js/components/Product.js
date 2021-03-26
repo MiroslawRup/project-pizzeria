@@ -1,5 +1,5 @@
 import {select, classNames, templates} from '../settings.js';
-import utils from '../utils.js';
+import {utils} from '../utils.js';
 import AmountWidget from './AmountWidget.js';
 
 class Product { // utw. instancji "Product" (każdy product osobno) - przekazanie nazwy produktu (cake, breakfast, pizza, salad) i obiektu z informacjami takiego produktu
