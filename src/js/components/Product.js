@@ -40,7 +40,7 @@ class Product { // utw. instancji "Product" (każdy product osobno) - przekazani
     thisProduct.accordionTrigger.addEventListener('click', function(event) { // listener na nagłówki produktu
       event.preventDefault();
       const activeProduct = document.querySelectorAll(select.all.menuProductsActive); // znalezienie wszystkich produktów z klasą aktywną
-      for (let product  of activeProduct) {   // pętla po aktywnych produktach
+      for (let product of activeProduct) {   // pętla po aktywnych produktach
         if (activeProduct !== thisProduct.element) { // gdy istnieją aktywne produkty który nie jest klikniętym produktem
           product.classList.remove(classNames.menuProduct.wrapperActive); // schowaj je poprzez usuniecie klasy active
         }
@@ -70,8 +70,7 @@ class Product { // utw. instancji "Product" (każdy product osobno) - przekazani
   initAmountWidget(){
     const thisProduct = this;
     thisProduct.amountWidget = new AmountWidget(thisProduct.amountWidgetElem); // utw. instancji "AmountWidget" (i przekazanie jej do podobiektu Product'u) - przekazanie elementu html - obszaru widżeta podawania ilosci produktu
-    thisProduct.amountWidgetElem.addEventListener('updated', function(event){ // ustawienie customowego listnera na widżet podawania ilosci produktu
-      event.preventDefault();
+    thisProduct.amountWidgetElem.addEventListener('updated', function(){ // ustawienie customowego listnera na widżet podawania ilosci produktu
       thisProduct.processOrder();
     });
   }
@@ -103,7 +102,8 @@ class Product { // utw. instancji "Product" (każdy product osobno) - przekazani
       }
     }
     thisProduct.priceSingle = price;
-    price *= thisProduct.amountWidget.value; // przemnożenie ceny produktu przez ilość zamawianych produktów (w klasie amountWidget)
+    price *= thisProduct.amountWidget.correctValue; ////////////////////////////////
+    console.log('czy tu powyżej ma być "price *= thisProduct.amountWidget.value" czy "price *= thisProduct.amountWidget.correctValue"');
     thisProduct.price = price;
     thisProduct.priceElem.innerHTML = price; // wstawienie ceny w pole TOTAL (uwzgledniajacej wybrane opcje produktu i ilość produktu)
   }
