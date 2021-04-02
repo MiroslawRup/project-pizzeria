@@ -39,7 +39,7 @@ export const select = {
 
     datePicker: {
       wrapper: '.date-picker',
-      input: `input[name="date"]`,
+      input: 'input[name="date"]',
     },
 
     hourPicker: {
@@ -72,7 +72,14 @@ export const select = {
   booking: {
     peopleAmount: '.people-amount',
     hoursAmount: '.hours-amount',
+    tablesLayout: '.floor-plan',
     tables: '.floor-plan .table',
+    tableIdAttribute: 'data-table',
+    formSubmit: '.order-confirmation [type="submit"]',
+    phone: '[name="phone"]',
+    address: '[name="address"]',
+    starterWater: '[name="starter"][value="water"]',
+    starterBread: '[name="starter"][value="bread"]',
   },
 
   nav: {
@@ -93,6 +100,8 @@ export const classNames = {
   booking: {
     loading: 'loading',
     tableBooked: 'booked',
+    tableSelected: 'selected',
+    table: 'table',
   },
 
   nav: {
@@ -122,10 +131,6 @@ export const settings = {
 
   cart: {
     defaultDeliveryFee: 20,
-  },
-
-  booking: {
-    tableIdAttribute: 'data-table',
   },
 
   db: {
