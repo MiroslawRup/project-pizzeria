@@ -2,8 +2,15 @@ import {settings, select, classNames} from './settings.js';
 import Product from './components/Product.js';
 import Cart from './components/Cart.js';
 import Booking from './components/Booking.js';
+import Home from './components/Home.js';
 
 const app = {
+
+  initHome:function(){
+    const thisApp = this;
+    thisApp.homeContainer = document.querySelector(select.containerOf.home);
+    thisApp.home = new Home(thisApp.homeContainer);
+  },
 
   initBooking:function(){
     const thisApp = this;
@@ -16,16 +23,13 @@ const app = {
     thisApp.pages = document.querySelector(select.containerOf.pages).children;
     thisApp.navLinks = document.querySelectorAll(select.nav.links);
     const idFromHash = window.location.hash.replace('#/','');
-
     let pageMatchingHash = thisApp.pages[0].id;
-
     for(let page of thisApp.pages){
       if(page.id == idFromHash){
         pageMatchingHash = page.id;
         break;
       }
     }
-
     thisApp.activatePage(pageMatchingHash);
     for(let link of thisApp.navLinks){
       link.addEventListener('click', function(event){
@@ -36,7 +40,14 @@ const app = {
         window.location.hash = '#/' + id;
       });
     }
-
+    thisApp.home.dom.orderNav.addEventListener('click', function(event){
+      event.preventDefault();
+      thisApp.activatePage('order');
+    });
+    thisApp.home.dom.bookNav.addEventListener('click', function(event){
+      event.preventDefault();
+      thisApp.activatePage('booking');
+    });
   },
 
   activatePage: function(pageId){
@@ -51,8 +62,8 @@ const app = {
 
   initCart: function(){
     const thisApp = this;
-    const cartElem = document.querySelector(select.containerOf.cart); // pobranie do stałej całego obszaru (diva) koszyka
-    thisApp.cart = new Cart(cartElem); // nowy obiekt Cart (ale zapisany też jako podobiekt app) z przekazaniem całego obszaru (diva) koszyka
+    const cartElem = document.querySelector(select.containerOf.cart);
+    thisApp.cart = new Cart(cartElem);
 
     thisApp.productList = document.querySelector(select.containerOf.menu);
     thisApp.productList.addEventListener('add-to-cart', function(event){
@@ -60,16 +71,16 @@ const app = {
     });
   },
 
-  initMenu: function() { // tworzenie instancji dla każdego produktu
+  initMenu: function() {
     const thisApp = this;
-    for(let productData in thisApp.data.products){ // nazwa produktu-  przejście pętlą po wszystkich obiektach produktów (cake, breakfast, pizza, salad).
-      new Product(thisApp.data.products[productData].id, thisApp.data.products[productData]); // utw. instancji "Product" (każdy product osobno) - przekazanie nazwy produktu (cake, breakfast, pizza, salad) i obiektu z informacjami takiego produktu
+    for(let productData in thisApp.data.products){
+      new Product(thisApp.data.products[productData].id, thisApp.data.products[productData]);
     }
   },
 
-  initData: function(){ // pobranie obiektu z danymi wszystkich produktów (z ob. dataSource z plk. data.js)
+  initData: function(){
     const thisApp = this;
-    thisApp.data = {}; // pobranie obiektu z danymi wszystkich produktów (z ob. dataSource z plk. data.js)
+    thisApp.data = {};
     const url = settings.db.url + '/' + settings.db.product;
     fetch(url)
       .then(function(rawResponse){
@@ -83,12 +94,13 @@ const app = {
 
   init: function(){
     const thisApp = this;
+    thisApp.initHome();
     thisApp.initPages();
-    thisApp.initData(); // wywołanie initData (pobranie obiektu z danymi wszystkich produktów (z ob. dataSource z plk. data.js))
+    thisApp.initData();
     thisApp.initCart();
     thisApp.initBooking();
   },
 
 };
 
-app.init();  // wywołanie całej aplikacji (obiekt app)
+app.init();
